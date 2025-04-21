@@ -1,26 +1,38 @@
 from urllib.parse import urljoin
 
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 # Create your views here.
 from bs4 import BeautifulSoup
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
 import requests
 
 from .models import *
-from .serializers import MainSerializer, MainPostSerializer
+from .serializers import MainListSerializer, MainPostSerializer, MainDetailSerializer
+from rest_framework.permissions import IsAdminUser, AllowAny
 
 
-class MainDetail(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = MainSerializer
+class MainDetailDelete(generics.RetrieveDestroyAPIView):
+    serializer_class = MainDetailSerializer
     queryset = Url.objects.all()
+
+    #Определил, что удаляют только админы
+    def get_permissions(self):
+        if self.request.method == "DELETE":
+            return [IsAdminUser()]
+        return [AllowAny()]
 
 
 class MainList(generics.ListCreateAPIView):
 
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ['url', 'name']
+    ordering_fields = ['created_at', 'name', 'url']
+
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return MainPostSerializer
-        return MainSerializer
+        return MainListSerializer
 
     def get_queryset(self):
         queryset = Url.objects.all()
