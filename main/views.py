@@ -7,7 +7,7 @@ from rest_framework.response import Response
 import requests
 
 from .models import *
-from .serializers import MainSerializer
+from .serializers import MainSerializer, MainPostSerializer
 
 
 
@@ -20,7 +20,11 @@ class MainDetail(generics.RetrieveUpdateDestroyAPIView):
 
 
 class MainList(generics.ListCreateAPIView):
-    serializer_class = MainSerializer
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return MainPostSerializer
+        return MainSerializer
 
     def get_queryset(self):
         queryset = Url.objects.all()
@@ -80,3 +84,72 @@ class MainList(generics.ListCreateAPIView):
             "favicon": favicon,
             "description": description,
         }
+
+"""
+class MainList(generics.ListCreateAPIView):
+    # Для GET запросов будем использовать MainSerializer
+    # Для POST запросов - MainPostSerializer
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return MainPostSerializer
+        return MainSerializer
+
+    def get_queryset(self):
+        queryset = Url.objects.all()
+        time = self.request.query_params.get('created_at')
+        if time is not None:
+            queryset = queryset.filter(created_at=time)
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        url = request.data.get('url')
+
+        existing_url = Url.objects.filter(url=url).first()
+        if existing_url:
+            # Используем MainSerializer для возврата данных
+            serializer = MainSerializer(existing_url)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        parsed_data = self.parse_website(url)
+        if 'error' in parsed_data:
+            return Response({'error': parsed_data['error']}, status=status.HTTP_400_BAD_REQUEST)
+
+        url_instance = Url(
+            url=url,
+            name=parsed_data.get('name'),
+            favicon=parsed_data.get('favicon'),
+            description=parsed_data.get('description'),
+        )
+        url_instance.save()
+
+        # Используем MainSerializer для возврата данных
+        serializer = MainSerializer(url_instance)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def parse_website(self, url):
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            return {'error': str(e)}
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        name = soup.title.string if soup.title else ""
+
+        favicon = None
+        icon_link = soup.find("link", rel=lambda x: x and x.lower() in ["icon", "shortcut icon"])
+        if icon_link:
+            favicon = urljoin(url, icon_link['href'])
+
+        description = ""
+        meta_desc = soup.find("meta", attrs={"name": "description"})
+        if meta_desc:
+            description = meta_desc.get("content", "")
+
+        return {
+            "url": url,
+            "name": name,
+            "favicon": favicon,
+            "description": description,
+        }"""
