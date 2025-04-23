@@ -11,6 +11,7 @@ from .models import *
 from .serializers import MainListSerializer, MainPostSerializer, MainDetailSerializer
 from rest_framework.permissions import IsAdminUser, AllowAny
 
+from services import parse_website as parser
 
 class MainDetailDelete(generics.RetrieveDestroyAPIView):
     serializer_class = MainDetailSerializer
@@ -50,7 +51,7 @@ class MainList(generics.ListCreateAPIView):
             serializer = self.get_serializer(existing_url)
             return Response(serializer.data, status=status.HTTP_200_OK)
         #Тут проходит работа по парсингу с bs4
-        parsed_data = self.parse_website(url)
+        parsed_data = self.parser(url)
 
         if 'error' in parsed_data:
             return Response({'error': parsed_data['error']}, status=status.HTTP_400_BAD_REQUEST)
@@ -67,28 +68,4 @@ class MainList(generics.ListCreateAPIView):
         serializer = self.get_serializer(url_instance)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def parse_website(self, url):
-        response = requests.get(url)
-        response.raise_for_status()
 
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        name = soup.title.string
-
-        favicon = None
-        icon_link = soup.find("link", rel=lambda x: x and x.lower() in ["icon", "shortcut icon"])
-        if icon_link:
-            favicon = urljoin(url, icon_link['href'])
-
-        description = ""
-        meta_desc = soup.find("meta", attrs={"name": "description"})
-        if meta_desc:
-            description = meta_desc.get("content", "")
-
-
-        return {
-            "url": url,
-            "name": name,
-            "favicon": favicon,
-            "description": description,
-        }
