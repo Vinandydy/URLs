@@ -1,6 +1,6 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import Url
+from .models import Bookmark
 
-admin.site.register(Url)
+admin.site.register(Bookmark)

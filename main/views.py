@@ -14,7 +14,7 @@ from rest_framework.permissions import IsAdminUser, AllowAny
 
 class MainDetailDelete(generics.RetrieveDestroyAPIView):
     serializer_class = MainDetailSerializer
-    queryset = Url.objects.all()
+    queryset = Bookmark.objects.all()
 
     #Определил, что удаляют только админы
     def get_permissions(self):
@@ -35,7 +35,7 @@ class MainList(generics.ListCreateAPIView):
         return MainListSerializer
 
     def get_queryset(self):
-        queryset = Url.objects.all()
+        queryset = Bookmark.objects.all()
         time = self.request.query_params.get('created_at')
         if time is not None:
             queryset = queryset.filter(created_at=time)
@@ -44,7 +44,7 @@ class MainList(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         url = request.data.get('url')
 
-        existing_url = Url.objects.filter(url=url).first()
+        existing_url = Bookmark.objects.filter(url=url).first()
         #Тут проверка на дурака, повторяется ли URlка
         if existing_url:
             serializer = self.get_serializer(existing_url)
@@ -56,7 +56,7 @@ class MainList(generics.ListCreateAPIView):
             return Response({'error': parsed_data['error']}, status=status.HTTP_400_BAD_REQUEST)
 
         # Создаем новую запись
-        url_instance = Url(
+        url_instance = Bookmark(
             url=url,
             name=parsed_data.get('name'),
             favicon=parsed_data.get('favicon'),
