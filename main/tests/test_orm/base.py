@@ -22,13 +22,13 @@ class BaseORMTestCase(TestCase):
     def setUpTestData(cls) -> None:
         group_title_pk_map = create_parent_model_test_data(
             model=Group,
-            filename='resources/groups.csv',
+            filename='main/tests/resources/groups.csv',
             column_name_for_mapping='name',
         )
 
         create_test_data(
             model=Bookmark,
-            filename='resources/bookmarks.csv',
+            filename='main/tests/resources/bookmarks.csv',
             foreign_key_field_name='group',
             parent_data_map=group_title_pk_map,
         )
