@@ -1,4 +1,5 @@
 from django.http import Http404
+from rest_framework.generics import get_object_or_404
 
 from .base import BaseORMTestCase
 from ...models import Bookmark
@@ -53,10 +54,11 @@ class TestSelect(BaseORMTestCase):
         self.assertIsNotNone(bookmark_by_id)
 
     #Тут застрял Сейчас подумать
+    #Решено, полагаю, что такой подход лучше, чем верхние
     def test_get_object_or_404(self):
         # Получить запись 'Торт Наполеон в домашних условиях, пошаговый рецепт с фото на 382 ккал'
         # или 404 (успешный кейс)
-        bookmark = Bookmark.objects.get() # TODO
+        bookmark = get_object_or_404(Bookmark, title='Торт Наполеон в домашних условиях, пошаговый рецепт с фото на 382 ккал') # TODO
         # Проверим по полю description
         self.assertEquals((
             'Торт Наполеон в домашних условиях. Вкусный рецепт приготовления с пошаговым описанием на 382 ккал, '
@@ -65,7 +67,7 @@ class TestSelect(BaseORMTestCase):
 
         # Получить несуществующую запись, выкинет исключение
         with self.assertRaises(Http404):
-            ...  # TODO
+            get_object_or_404(Bookmark, title='404')  # TODO
 
     #Как я понял - QuerySet - тип данных который вернулся, используется вместо all, так как быстрее
     def test_values(self):
@@ -86,7 +88,7 @@ class TestSelect(BaseORMTestCase):
             self.assertIn(bm_fields_tuple[0], self.BOOKMARK_TITLES)
 
         # Нужно получить плоский список (можно выбрать только 1 поле)
-        bookmark_titles = ...  # TODO
+        bookmark_titles = Bookmark.objects.values('title')  # TODO
         self.assertEquals(self.BOOKMARK_TITLES, list(bookmark_titles))
 
     def test_order_by(self):
@@ -101,7 +103,7 @@ class TestSelect(BaseORMTestCase):
 
     def test_offset_limit(self):
         # Получить записи OFFSET 4, LIMIT 2
-        bookmarks = Bookmark.objects.offset(4, 2)
+        bookmarks = Bookmark.objects.all().order_by('id')[4:4+2]
 
         self.assertEquals(
             'Торт Наполеон в домашних условиях, пошаговый рецепт с фото на 382 ккал',
