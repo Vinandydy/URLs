@@ -1,17 +1,39 @@
 from django.db import models
+from django.utils.timezone import now
+
+from .managers import BookmarkManager
+
+
+class Group(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    order = models.IntegerField()
 
 
 class Bookmark(models.Model):
-    url = models.URLField(max_length=2048, blank=False, null=False, unique=True, verbose_name='Ссылка')
-    name = models.CharField(max_length=1024, blank=False, null=False, unique=True, verbose_name='Наименование')
-    description = models.TextField(blank=True, null=True, unique=False, verbose_name='Описание')
-    favicon = models.URLField(blank=True, null=True, unique=False, verbose_name='Иконка')
-    created_at = models.DateTimeField(auto_now_add=True)
+    time_created = models.DateTimeField(auto_now_add=True)
+    time_deleted = models.DateTimeField(null=True)
+    favicon = models.URLField(null=True)
+    url = models.URLField(verbose_name='URL')
+    title = models.CharField(max_length=255, default='Smth')
+    description = models.CharField(null=True, max_length=255)
+    group = models.ForeignKey(
+        to=Group,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name='bookmarks',
+    )
+
+    objects = BookmarkManager()
 
     class Meta:
-        db_table = 'Bookmark'
-        verbose_name = 'Сайт'
-        verbose_name_plural = "Сайты"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['url'],
+                condition=models.Q(time_deleted__isnull=True),
+                name='URL_UNIQUE_IF_NOT_DELETED',
+            )
+        ]
 
-    def __str__(self):
-        return self.url
+    def delete(self, using=None, keep_parents=False):
+        self.time_deleted = now()
+        self.save()

@@ -6,7 +6,7 @@ from main.models import Bookmark
 class MainDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bookmark
-        fields = ['id','url','name','description','favicon','created_at']
+        fields = ['id', 'title', 'description', 'url', 'time_created']
 
 
 class MainPostSerializer(serializers.ModelSerializer):
