@@ -1,18 +1,19 @@
 from django.http import Http404
 
 from .base import BaseORMTestCase
+from ...models import Group, Bookmark
 
 
 class TestFilters(BaseORMTestCase):
     def test_simple_filters(self):
         # Получить группу 'Рецепты'
-        group = ...  # TODO
+        group = Group.objects.get(name="Рецепты")
 
         # Проверим данные
         self.assertEquals(2, group.order)
 
         # Получить закладку 'Яндекс Практикум'
-        bookmark = ...  # TODO
+        bookmark = Bookmark.objects.get(title='Яндекс Практикум')
 
         # Проверим данные
         self.assertEquals('https://practicum.yandex.ru/profile/backend-developer/', bookmark.url)
@@ -25,7 +26,11 @@ class TestFilters(BaseORMTestCase):
         # 4. название оканчивается на 'кум'
         # 5. название соответствует маске regexp r'Я*'
         bookmarks = [
-            ...  # TODO
+            Bookmark.objects.filter(title__exact="Яндекс Практикум").first(),
+            Bookmark.objects.filter(title__contains='декс').first(),
+            Bookmark.objects.filter(title__startswith='Яндекс').first(),
+            Bookmark.objects.filter(title__endswith='кум').first(),
+            Bookmark.objects.filter(title__regex=r'Я*').first(),
         ]
 
         for bookmark in bookmarks:
