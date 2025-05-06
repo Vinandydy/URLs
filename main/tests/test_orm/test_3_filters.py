@@ -11,7 +11,7 @@ from ...models import Group, Bookmark
 class TestFilters(BaseORMTestCase):
     def test_simple_filters(self):
         # Получить группу 'Рецепты'
-        group = Group.objects.get(name="Рецепты")
+        group = Group.objects.filter(title__contains='Рецепты')
 
         # Проверим данные
         self.assertEquals(2, group.order)
@@ -44,8 +44,8 @@ class TestFilters(BaseORMTestCase):
     def test_date_filters(self):
         # Получить закладки, созданные в этом месяце и в этом году
         bookmark_querysets = [
-            Bookmark.objects.filter(time_created__month=5),
-            Bookmark.objects.filter(time_created__year=2025)
+            Bookmark.objects.filter(time_created__month=timezone.now().month),
+            Bookmark.objects.filter(time_created__year=timezone.now().year),
         ]
 
         # Т.к. все закладки были созданы сегодня,
@@ -56,7 +56,7 @@ class TestFilters(BaseORMTestCase):
     #Почему-то выдает ошибку
     def test_exclude(self):
         # Получить названия всех закладок с буквой "м" в названии, исключая 'Яндекс Практикум'
-        bookmark_titles = Bookmark.objects.filter(title__contains='м').exclude(title__contains='Яндекс Практикум').values_list('title', flat=True)
+        bookmark_titles = Bookmark.objects.filter(title__contains='м').exclude(title='Яндекс Практикум').values_list('title', flat=True)
 
         self.assertEquals(len(bookmark_titles), 3)
         self.assertIn(
@@ -115,7 +115,7 @@ class TestFilters(BaseORMTestCase):
 
     def test_many_filters(self):
         # Получить группы с названием 'Важное' и order 0
-        groups = Group.objects.filter(name__contains='Важное') & Group.objects.filter(order=0)
+        groups = Group.objects.filter(name__contains='Важное', order=0)
 
         self.assertEquals(1, groups.count())
 
@@ -132,5 +132,5 @@ class TestFilters(BaseORMTestCase):
 
     def test_exists(self):
         # Проверить, существуют ли группы с названием 'Важное'
-        do_groups_exist = Group.objects.filter(name__exact="Важное")
+        do_groups_exist = Group.objects.filter(name='Важное').exists()
         self.assertTrue(do_groups_exist)
