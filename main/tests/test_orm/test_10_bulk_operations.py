@@ -43,7 +43,7 @@ class TestBulkOperations(BaseORMTestCase):
                     bookmark.title = bookmark.title[:30]
                     fields_changed = True
 
-                if not bookmark.description and bookmark.group:
+                if not bookmark.description:
                     bookmark.description = f'Закладка группы "{bookmark.group.name}"'
                     fields_changed = True
             if fields_changed:
