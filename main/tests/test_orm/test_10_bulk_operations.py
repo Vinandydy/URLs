@@ -1,6 +1,6 @@
 from .base import BaseORMTestCase
 
-
+from ...models import Bookmark, Group
 class TestBulkOperations(BaseORMTestCase):
     def test_bulk_create(self):
         # Создать группы из данных new_groups_data с помощью bulk_create
@@ -10,10 +10,10 @@ class TestBulkOperations(BaseORMTestCase):
             ('Идеи для творчества', 6),
         ]
 
-        # TODO ...
-        ...
-        ...
-
+        create_groups =[
+            Group(name=name, order=order) for name, order in new_groups_data
+        ]
+        Group.objects.bulk_create(create_groups)
         # Проверим на существование новые группы
         for group_name, group_order in new_groups_data:
             self.assertTrue(Group.objects.filter(name=group_name, order=group_order).exists())
@@ -26,22 +26,34 @@ class TestBulkOperations(BaseORMTestCase):
 
         # Получить список всех закладок, подгрузив в тот же запрос связанные группы
         # Можно выбрать только те закладки, которые нуждаются в обновлении
-        bookmarks = ... # TODO
+        bookmarks = Bookmark.objects.select_related('group').all()
         bookmarks_to_update = []
 
         for bookmark in bookmarks:
             fields_changed = False
 
-            # TODO ...
-            ...
-            ...
+            if '?' in bookmark.url:
+                #Эту строку мне самозаполнение подсказал, но как я понял, тут просто избавляемся от всего, что за ?
+                changed_url = bookmark.url.split('?')[0]
+                if changed_url != bookmark.url:
+                    bookmarks.url = changed_url
+                    fields_changed = True
 
+                if len(bookmark.title) > 30:
+                    bookmark.title = bookmark.title[:30]
+                    fields_changed = True
+
+                if not bookmark.description and bookmark.group:
+                    bookmark.description = f'Закладка группы "{bookmark.group.name}"'
+                    fields_changed = True
             if fields_changed:
-                ...  # TODO
+                bookmarks_to_update.append(bookmark)
 
         self.assertEquals(5, len(bookmarks_to_update))
-
-        ...  # TODO
+        #Как я понял bulk сюда
+        Bookmark.objects.bulk_update(
+            bookmarks_to_update,
+        )
 
         # Проверим на существование обновленные закладки
         self.assertTrue(Bookmark.objects.filter(title='Торт Наполеон в домашних ус...').exists())
