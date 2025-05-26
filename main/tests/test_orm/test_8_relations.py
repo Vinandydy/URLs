@@ -1,5 +1,6 @@
 from .base import BaseORMTestCase
-
+from ...models import Group, Bookmark
+from django.db.models import F, Count, Prefetch
 
 class TestRelations(BaseORMTestCase):
     GROUP_BOOKMARKS_COUNT_MAP = {
@@ -10,11 +11,12 @@ class TestRelations(BaseORMTestCase):
         'Ремонт': 1,
     }
 
+    #Warning вновь кидает, не знаю, что ему не нравится
     def test_groups_bookmarks(self):
         # Получить названия всех закладок из группы, используя объект group
         group = Group.objects.get(pk=1)
 
-        bookmark_titles = ... # TODO
+        bookmark_titles = [bookmark.title for bookmark in group.bookmarks.all()]
 
         self.assertIn('Яндекс Практикум', bookmark_titles)
         self.assertIn('Моё обучение – Stepik', bookmark_titles)
@@ -24,31 +26,35 @@ class TestRelations(BaseORMTestCase):
         # "начинается с 'Я'"
         group = Group.objects.get(pk=1)
 
-        bookmark_titles = ... # TODO
+        bookmark_titles = [bookmark.title for bookmark in group.bookmarks.filter(title__startswith='Я')]
 
         self.assertIn('Яндекс Практикум', bookmark_titles)
 
+    #Тут помогло, что теперь value и value_list я знаю, что используется почти всегда в конце
     def test_filter_by_related_fields(self):
         # Получить названия закладок по именам групп - 'Полезное', 'Важное', используя только модель Закладка
-        bookmark_titles = ... # TODO
+        bookmark_titles = Bookmark.objects.filter(group__name__in=['Полезное', 'Важное']).values_list('title', flat=True)
 
         self.assertIn('Gmail', bookmark_titles)
 
     def test_relations_f(self):
         # Получить список всех закладок, с помощью аннотаций добавить название группы в поле group_title
-        bookmarks = ... # TODO
+        bookmarks = Bookmark.objects.annotate(group_title=F('group__name'))
 
         for bookmark in bookmarks:
             self.assertIn(bookmark.group_title, self.GROUP_BOOKMARKS_COUNT_MAP.keys())
 
+    #Тут кстати оказалось проще, чем я думал, изначально я пытался через Group получить
+    #колонки от bookmark, а по итогу достаточно было взять колонку связи
     def test_agregate_related(self):
         # Посчитать кол-во закладок в каждой группе, добавить его в поле bookmarks_cnt
-        groups = ... # TODO
+        groups = Group.objects.annotate(bookmarks_cnt=Count('bookmarks'))
 
         for group in groups:
             bookmarks_count = self.GROUP_BOOKMARKS_COUNT_MAP[group.name]
             self.assertEquals(bookmarks_count, group.bookmarks_cnt)
 
+    #Я долго ходил вокруг, думаю что мне нужно Prefech использовать, но пришел к такому варианту
     def test_prefetch_related(self):
         # Это просто наглядный пример проблемы N + 1, тут ничего делать не нужно
         # Посчитаем кол-во запросов в БД при подтягивании модели по связям
@@ -68,19 +74,24 @@ class TestRelations(BaseORMTestCase):
         # будет обращение к закешированному QuerySet закладок
         Group.objects.prefetch_related('bookmarks').all()
 
+    #Все равно не совсем понял особенность select_related
     def test_select_related(self):
         # Получить список всех закладок, подгрузив в тот же запрос связанные группы
-        bookmarks = ... # TODO
+        bookmarks = Bookmark.objects.select_related('group')
 
         self.assertIn('LEFT OUTER JOIN', str(bookmarks.query))
 
     def test_filtered_prefetch(self):
         # Выбрать все группы и только те их закладки, которые содержат '.ru' в url
         # Необходимо сделать это избегая проблемы N + 1 (подсказка: models.Prefetch)
-        groups = ... # TODO
+        groups = Group.objects.prefetch_related(
+            Prefetch('bookmarks', queryset=Bookmark.objects.filter(url__contains='.ru'))
+        )
 
         # Соберем полученные bookmark title
-        bookmark_titles = ... # TODO
+        bookmark_titles = []
+        for group in groups:
+            bookmark_titles.extend(bookmark.title for bookmark in group.bookmarks.all())
 
         # Проверим, что мы получили только нужные данные
         for title in [

@@ -10,7 +10,7 @@ class TestAnnotate(BaseORMTestCase):
         # Составить дополнительное "поле" из значений других полей групп с помощью .annotate() и Value():
         # ИМЯ + '' + order, например 'Ремонт__5'
         groups = Group.objects.annotate(
-            str_repr = Concat('name', Value("__"), 'order', output_field=CharField())
+            str_repr=Concat('name', Value("__"), 'order', output_field=CharField())
         )
 
         for group in groups:
